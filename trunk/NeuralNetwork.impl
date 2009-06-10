@@ -1,0 +1,263 @@
+
+/*
+ * Create a neural network
+ * Parameters: number of input nodes, number of nodes per hidden layer, number 
+ * of output nodes, number of total layers(input and output included), learning
+ * rate, momentum term
+ */
+template <class ACT, class ACTP>
+  NeuralNetwork<ACT,ACTP>::NeuralNetwork(int num_input, int num_per_hidden, int num_output, int num_layers, double eta, double alpha)
+{
+    //srand(614563); //seeded for reproducability of project
+    this->num_input = num_input;
+    this->num_output = num_output;
+    this->num_per_hidden = num_per_hidden;
+    this->num_layers = num_layers;
+    this->eta = eta;
+    this->alpha = alpha;
+
+    //init layers
+    layers = new Layer[num_layers];
+
+    //tell each layer how many nodes it has
+    layers[0].num_nodes = num_input;
+    layers[num_layers - 1].num_nodes = num_output;
+    
+    for (int i = 1; i < num_layers - 1; i++)
+    {
+        layers[i].num_nodes = num_per_hidden;
+    }
+
+    //init nodes and weights, and weight lags
+    layers[0].nodes = new Node[num_input];
+    for (int i = 1; i < num_layers; i++) //input node has no weights
+    {
+        layers[i].nodes = new Node[layers[i].num_nodes];
+        for (int j = 0; j < layers[i].num_nodes; j++)
+        {
+            //a node has weights for each output of previous layer
+            layers[i].nodes[j].weights = new double[layers[i - 1].num_nodes];
+            layers[i].nodes[j].weights_change_lag = new double[layers[i - 1].num_nodes];
+
+            //Initialize the weights between -1 and 1, these are good values for sigmoid activation function
+            for (int k = 0; k < layers[i - 1].num_nodes; k++)
+            {
+                layers[i].nodes[j].weights[k] = InitWeight(-1, 1);
+                layers[i].nodes[j].weights_change_lag[k] = 0;
+            }
+            layers[i].nodes[j].bias_weight = InitWeight(-1, 1);
+        }
+    }
+}
+
+
+/*
+ * Frees memory for all layers and nodes
+ */
+template <class ACT, class ACTP>
+NeuralNetwork<ACT,ACTP>::~NeuralNetwork()
+{
+    //delete the pointers under node for hidden layers
+    for (int l = 1; l < num_layers - 1; l++)
+    {
+        for (int j = 0; j < num_per_hidden; j++)
+        {
+            delete[] layers[l].nodes[j].weights;
+            delete[] layers[l].nodes[j].weights_change_lag;
+        }
+        //delete the hidden layers
+        delete[] layers[l].nodes;
+    }
+
+    //delete pointers under node for the output layer
+    for (int j = 0; j < num_output; j++)
+    {
+        delete[] layers[num_layers - 1].nodes[j].weights;
+        delete[] layers[num_layers - 1].nodes[j].weights_change_lag;
+    }
+
+    //delete the output and input layers
+    delete[] layers[num_layers - 1].nodes;
+    delete[] layers[0].nodes;
+}
+
+/*
+ * Performs one epoch of Back Prop Learning
+ */
+template <class ACT, class ACTP>
+void NeuralNetwork<ACT,ACTP>::BackPropLearn()
+{
+    //Change presentation order for better convergence characteristics
+    ReorderExamples();
+
+    //For all examples
+    for (int e = 0; e < x.size(); e++)
+    {
+        //Forward Pass-----------------------------------
+        for (int j = 0; j < layers[0].num_nodes; j++)
+        {
+            layers[0].nodes[j].a = x[e][j];
+        }
+
+        for (int l = 1; l < num_layers; l++)
+        {
+            for (int i = 0; i < layers[l].num_nodes; i++)
+            {
+                double sum = 0.0;
+                for (int j = 0; j < layers[l - 1].num_nodes; j++)
+                {
+                    sum += layers[l].nodes[i].weights[j] * layers[l - 1].nodes[j].a;
+                }
+                sum += 1 * layers[l].nodes[i].bias_weight;
+                layers[l].nodes[i].in = sum;
+                layers[l].nodes[i].a = activation(layers[l].nodes[i].in);
+            }
+        }
+
+        //Backward Pass------------------------------------
+
+        for (int i = 0; i < layers[num_layers - 1].num_nodes; i++)
+        {
+            double a = layers[num_layers - 1].nodes[i].a;
+            layers[num_layers - 1].nodes[i].delta = activation_prime(a)*(y[e][i] - a);
+        }
+
+        for (int l = num_layers - 2; l >= 0; l--)
+        {
+            for (int j = 0; j < layers[l].num_nodes; j++)
+            {
+                double sum = 0.0;
+                for (int i = 0; i < layers[l + 1].num_nodes; i++)
+                {
+                    sum += layers[l + 1].nodes[i].delta * layers[l + 1].nodes[i].weights[j];
+                }
+                layers[l].nodes[j].delta = activation_prime(layers[l].nodes[j].a) * sum;
+
+                //update weights in l+1
+                for (int i = 0; i < layers[l + 1].num_nodes; i++)
+                {
+                    double delta_weight = eta * layers[l].nodes[j].a * layers[l + 1].nodes[i].delta + alpha * layers[l + 1].nodes[i].weights_change_lag[j];
+                    layers[l + 1].nodes[i].weights[j] += delta_weight;
+                    layers[l + 1].nodes[i].weights_change_lag[j] = delta_weight;
+                }
+            }
+            //update the bias weights in l+1
+            for (int i = 0; i < layers[l + 1].num_nodes; i++)
+            {
+                double delta_weight = eta * 1 * layers[l + 1].nodes[i].delta + alpha * layers[l + 1].nodes[i].bias_weight_change_lag;
+                layers[l + 1].nodes[i].bias_weight += delta_weight;
+                layers[l + 1].nodes[i].bias_weight_change_lag = delta_weight;
+            }
+        }
+    }
+}
+
+/*
+ * Calculates the continuous output of the output nodes
+ * Pameters: Input to test
+ * Returns: continuous output nodes
+ */
+template <class ACT, class ACTP>
+std::vector<double> NeuralNetwork<ACT,ACTP>::Predict(std::vector<double> x)
+{
+    //TODO: Refactor this into a Forward Pass function, and use in back prop
+    for (int j = 0; j < layers[0].num_nodes; j++)
+    {
+        layers[0].nodes[j].a = x[j];
+    }
+
+    for (int l = 1; l < num_layers; l++)
+    {
+        for (int i = 0; i < layers[l].num_nodes; i++)
+        {
+            double sum = 0.0;
+            for (int j = 0; j < layers[l - 1].num_nodes; j++)
+            {
+                sum += layers[l].nodes[i].weights[j] * layers[l - 1].nodes[j].a;
+            }
+            sum += 1 * layers[l].nodes[i].bias_weight;
+            layers[l].nodes[i].in = sum;
+            layers[l].nodes[i].a = activation(layers[l].nodes[i].in);
+        }
+    }
+
+
+
+    std::vector<double> y_ret;
+    for (int i = 0; i < num_output; i++)
+    {
+        y_ret.push_back(layers[num_layers - 1].nodes[i].a);
+    }
+    return y_ret;
+}
+
+/*
+ * Check for convergence over all examples
+ * Parameters: Tolerance level, tolerance is in each dimension individually
+ * Returns: boolean true if converged, false o.w.
+ */
+template <class ACT, class ACTP>
+bool NeuralNetwork<ACT,ACTP>::IsConverged(double tol)
+{
+    for (int e = 0; e < x.size(); e++)
+    {
+        std::vector<double> out = Predict(x[e]);
+        for (int i = 0; i < num_output; i++)
+        {
+            if (fabs(out[i] - y[e][i]) > tol)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+/*
+ * Returns a random number between a and b
+ * Parameters: lower bound, upper bound
+ * Return: random double in range
+ */
+template <class ACT, class ACTP>
+double NeuralNetwork<ACT,ACTP>::InitWeight(double a, double b)
+{
+    return a + (b - a)*((double) rand() / (double) RAND_MAX);
+}
+
+
+
+
+/*
+ * Reorders the examples 
+ */
+template <class ACT, class ACTP>
+void NeuralNetwork<ACT,ACTP>::ReorderExamples()
+{
+
+    std::vector<std::vector<double> > new_x;
+    std::vector<std::vector<double> > new_y;
+
+    while (x.size() > 0)
+    {
+        int index = rand() % x.size();
+        new_x.push_back(x[index]);
+        new_y.push_back(y[index]);
+        x.erase(x.begin() + index);
+        y.erase(y.begin() + index);
+    }
+
+    x = new_x;
+    y = new_y;
+}
+
+
+/*
+ * Add training data to the machine
+ */
+template <class ACT, class ACTP>
+  void NeuralNetwork<ACT,ACTP>::AddData(std::vector<std::vector<double> > &x,std::vector<std::vector<double> > &y)
+{
+    this->x=x;
+    this->y=y;
+}
