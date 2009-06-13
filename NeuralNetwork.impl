@@ -6,9 +6,8 @@
  * rate, momentum term
  */
 template <class ACT, class ACTP>
-  NeuralNetwork<ACT,ACTP>::NeuralNetwork(int num_input, int num_per_hidden, int num_output, int num_layers, double eta, double alpha)
+NeuralNetwork<ACT,ACTP>::NeuralNetwork(int num_input, int num_per_hidden, int num_output, int num_layers, double eta, double alpha)
 {
-    //srand(614563); //seeded for reproducability of project
     this->num_input = num_input;
     this->num_output = num_output;
     this->num_per_hidden = num_per_hidden;
@@ -93,26 +92,9 @@ void NeuralNetwork<ACT,ACTP>::BackPropLearn()
     //For all examples
     for (int e = 0; e < x.size(); e++)
     {
-        //Forward Pass-----------------------------------
-        for (int j = 0; j < layers[0].num_nodes; j++)
-        {
-            layers[0].nodes[j].a = x[e][j];
-        }
 
-        for (int l = 1; l < num_layers; l++)
-        {
-            for (int i = 0; i < layers[l].num_nodes; i++)
-            {
-                double sum = 0.0;
-                for (int j = 0; j < layers[l - 1].num_nodes; j++)
-                {
-                    sum += layers[l].nodes[i].weights[j] * layers[l - 1].nodes[j].a;
-                }
-                sum += 1 * layers[l].nodes[i].bias_weight;
-                layers[l].nodes[i].in = sum;
-                layers[l].nodes[i].a = activation(layers[l].nodes[i].in);
-            }
-        }
+      ForwardPass(x[e]);
+
 
         //Backward Pass------------------------------------
 
@@ -152,15 +134,12 @@ void NeuralNetwork<ACT,ACTP>::BackPropLearn()
     }
 }
 
-/*
- * Calculates the continuous output of the output nodes
- * Pameters: Input to test
- * Returns: continuous output nodes
- */
+
+
+
 template <class ACT, class ACTP>
-std::vector<double> NeuralNetwork<ACT,ACTP>::Predict(std::vector<double> x)
+void NeuralNetwork<ACT,ACTP>::ForwardPass(std::vector<double> x)
 {
-    //TODO: Refactor this into a Forward Pass function, and use in back prop
     for (int j = 0; j < layers[0].num_nodes; j++)
     {
         layers[0].nodes[j].a = x[j];
@@ -180,15 +159,27 @@ std::vector<double> NeuralNetwork<ACT,ACTP>::Predict(std::vector<double> x)
             layers[l].nodes[i].a = activation(layers[l].nodes[i].in);
         }
     }
+}
 
+/*
+ * Calculates the continuous output of the output nodes
+ * Pameters: Input to test
+ * Returns: continuous output nodes
+ */
+template <class ACT, class ACTP>
+std::vector<double> NeuralNetwork<ACT,ACTP>::Predict(std::vector<double> x)
+{
+    //TODO: Refactor this into a Forward Pass function, and use in back prop
 
+  ForwardPass(x);
+  
 
-    std::vector<double> y_ret;
-    for (int i = 0; i < num_output; i++)
-    {
-        y_ret.push_back(layers[num_layers - 1].nodes[i].a);
-    }
-    return y_ret;
+  std::vector<double> y_ret;
+ for (int i = 0; i < num_output; i++)
+   {
+     y_ret.push_back(layers[num_layers - 1].nodes[i].a);
+   }
+ return y_ret;
 }
 
 /*
