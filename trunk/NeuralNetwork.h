@@ -69,8 +69,10 @@ private:
     double sigmoid(double t);
     double sigmoid_prime(double t);
     void ReorderExamples();
+    void ForwardPass(std::vector<double>);
     ACT activation;
     ACTP activation_prime;
+    
 
 public:
     Layer * layers;
