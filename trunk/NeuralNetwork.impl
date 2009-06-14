@@ -1,4 +1,5 @@
 
+
 /*
  * Create a neural network
  * Parameters: number of input nodes, number of nodes per hidden layer, number 
@@ -138,7 +139,7 @@ void NeuralNetwork<ACT,ACTP>::BackPropLearn()
 
 
 template <class ACT, class ACTP>
-void NeuralNetwork<ACT,ACTP>::ForwardPass(std::vector<double> x)
+void NeuralNetwork<ACT,ACTP>::ForwardPass(vector<double> x)
 {
     for (int j = 0; j < layers[0].num_nodes; j++)
     {
@@ -167,7 +168,7 @@ void NeuralNetwork<ACT,ACTP>::ForwardPass(std::vector<double> x)
  * Returns: continuous output nodes
  */
 template <class ACT, class ACTP>
-std::vector<double> NeuralNetwork<ACT,ACTP>::Predict(std::vector<double> x)
+vector<double> NeuralNetwork<ACT,ACTP>::Predict(vector<double> x)
 {
     //TODO: Refactor this into a Forward Pass function, and use in back prop
 
@@ -192,7 +193,7 @@ bool NeuralNetwork<ACT,ACTP>::IsConverged(double tol)
 {
     for (int e = 0; e < x.size(); e++)
     {
-        std::vector<double> out = Predict(x[e]);
+        vector<double> out = Predict(x[e]);
         for (int i = 0; i < num_output; i++)
         {
             if (fabs(out[i] - y[e][i]) > tol)
@@ -226,8 +227,8 @@ template <class ACT, class ACTP>
 void NeuralNetwork<ACT,ACTP>::ReorderExamples()
 {
 
-    std::vector<std::vector<double> > new_x;
-    std::vector<std::vector<double> > new_y;
+    vector<vector<double> > new_x;
+    vector<vector<double> > new_y;
 
     while (x.size() > 0)
     {
@@ -247,7 +248,7 @@ void NeuralNetwork<ACT,ACTP>::ReorderExamples()
  * Add training data to the machine
  */
 template <class ACT, class ACTP>
-  void NeuralNetwork<ACT,ACTP>::AddData(std::vector<std::vector<double> > &x,std::vector<std::vector<double> > &y)
+void NeuralNetwork<ACT,ACTP>::AddData(vector<vector<double> > &x,vector<vector<double> > &y)
 {
     this->x=x;
     this->y=y;
