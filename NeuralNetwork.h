@@ -11,6 +11,9 @@
 #include <cmath>
 #include <stdlib.h>
 
+
+using namespace std;
+
 /*
  * A single neuron
  */
@@ -56,20 +59,21 @@ class sigmoid_prime
 
 
 
-template <class ACT=sigmoid, class ACTP=sigmoid_prime>
+
+template <class ACT=sigmoid, class ACTP=sigmoid_prime> //set the defaults
 class NeuralNetwork
 {
 private:
 
     int num_input, num_per_hidden, num_output, num_layers;
     double eta, alpha;
-    std::vector<std::vector<double> > x;
-    std::vector<std::vector<double> > y;
+    vector<vector<double> > x;
+    vector<vector<double> > y;
     double InitWeight(double a, double b);
     double sigmoid(double t);
     double sigmoid_prime(double t);
     void ReorderExamples();
-    void ForwardPass(std::vector<double>);
+    void ForwardPass(vector<double>);
     ACT activation;
     ACTP activation_prime;
     
@@ -78,9 +82,9 @@ public:
     Layer * layers;
     NeuralNetwork(int num_input, int num_per_hidden, int num_output, int num_layers, double eta = .5, double alpha = 0);
     virtual ~NeuralNetwork();
-    void AddData(std::vector<std::vector<double> > &x,std::vector<std::vector<double> > &y);
+    void AddData(vector<vector<double> > &x,vector<vector<double> > &y);
     bool IsConverged(double tol = .05);
-    std::vector<double> Predict(std::vector<double> x);
+    vector<double> Predict(vector<double> x);
     void BackPropLearn();
 
 };
