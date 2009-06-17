@@ -1,5 +1,4 @@
 
-
 /*
  * Create a neural network
  * Parameters: number of input nodes, number of nodes per hidden layer, number 
