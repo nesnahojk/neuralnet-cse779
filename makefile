@@ -1,5 +1,9 @@
-NeuralNetwork.o : NeuralNetwork.h main.cpp
-	g++ NeuralNetwork.h main.cpp -o NeuralNetwork.o
+CXXFLAGS = -c
+NeuralNetwork.o: NeuralNetwork.h NeuralNetwork.impl
+	$(CXX) $(CXXFLAGS)  NeuralNetwork.h -o NeuralNetwork.o
 
 clean:
-	rm NeuralNetwork.o
+	$(RM) NeuralNetwork.o
+
+
+
