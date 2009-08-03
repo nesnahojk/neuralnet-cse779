@@ -38,6 +38,9 @@ struct Layer
 };
 
 
+
+
+//---Include some default activation functions
 class sigmoid
 {
  public:
@@ -56,11 +59,11 @@ class sigmoid_prime
   }
 };
 
+//----------------------------------------------
 
 
 
-
-template <class ACT=sigmoid, class ACTP=sigmoid_prime> //set the defaults
+template <class ACT, class ACTP>
 class NeuralNetwork
 {
 private:
