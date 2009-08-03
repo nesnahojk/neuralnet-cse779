@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     {
         double eta=.05*i+.05;
 
-        NeuralNetwork<> np(4,4,1,3,eta,alpha);
+        NeuralNetwork<sigmoid,sigmoid_prime> np(4,4,1,3,eta,alpha);
         np.AddData(vecx,vecy);
 
         int epochs_req_converge=0;
